@@ -7,7 +7,7 @@ import pentmino.obj.MotionState;
 
 import java.util.*;
 
-public class PerfectMain {
+public class LazyPerfectMain {
     public static void main(String[] args) {
         // フィールドの作成
         FieldPentmino field = createField();
@@ -25,47 +25,49 @@ public class PerfectMain {
             } while (permutations.hasNext());
         }
 
-        // 4ミノの順番から、ホールドも含めた3ミノの順番をマップ
-        HashMap<PentminoSet4, List<PentminoSet3>> threeMap = new HashMap<>();
+        // I + 4ミノの順番から、ホールドも含めた4ミノの順番をマップ
+        HashMap<PentminoSet5, List<PentminoSet4>> fourMap = new HashMap<>();
         for (List<PentminoType> types : all) {
-            List<PentminoSet3> bags = create3Bags(types.get(0), types.get(1), types.get(2), types.get(3));
-            threeMap.put(new PentminoSet4(types.get(0), types.get(1), types.get(2), types.get(3)), bags);
+            List<PentminoSet4> bags = create4Bags(types.get(0), types.get(1), types.get(2), types.get(3));
+            fourMap.put(new PentminoSet5(types.get(0), types.get(1), types.get(2), types.get(3)), bags);
         }
-        System.out.println(threeMap.size());
+        System.out.println(fourMap.size());
 
-        // 3ミノの順番のみを取得
-        HashSet<PentminoSet3> sets = new HashSet<>();
-        for (List<PentminoSet3> bag : threeMap.values()) {
-            for (PentminoSet3 pentminoSet : bag) {
+        // 4ミノの順番のみを取得
+        HashSet<PentminoSet4> sets = new HashSet<>();
+        for (List<PentminoSet4> bag : fourMap.values()) {
+            for (PentminoSet4 pentminoSet : bag) {
                 sets.add(pentminoSet);
             }
         }
         System.out.println(sets.size());
 
-        // 3ミノ順からパフェをできるパターンを取得
-        HashMap<PentminoSet3, Result> results = new HashMap<>();
-        for (PentminoSet3 set : sets) {
-//            System.out.println(set);
+        // 4ミノ順からパフェをできるパターンを取得
+        int count = 0;
+        HashMap<PentminoSet4, Result> results = new HashMap<>();
+        for (PentminoSet4 set : sets) {
+            System.out.print("\r" + count + ": " + set);
             Result result = check(field.copy(), set);
             if (!result.equals(Result.NONE))
                 results.put(set, result);
+            count++;
         }
 
-        // 3ミノの結果をテト譜で出力
-        for (Map.Entry<PentminoSet3, Result> result : results.entrySet()) {
+        // 4ミノの結果をテト譜で出力
+        for (Map.Entry<PentminoSet4, Result> result : results.entrySet()) {
             System.out.print(result.getKey() + ": ");
             showTetfu(result.getValue().getActions());
         }
 
         System.out.println(results.size());
 
-        // 4ミノの結果を抽出
-        HashSet<PentminoSet4> oks = new HashSet<>();
+        // 5ミノの結果を抽出
+        HashSet<PentminoSet5> oks = new HashSet<>();
         LOOP:
-        for (Map.Entry<PentminoSet4, List<PentminoSet3>> entry : threeMap.entrySet()) {
-            List<PentminoSet3> list = entry.getValue();
-            for (PentminoSet3 pentminoSet3 : results.keySet()) {
-                if (list.contains(pentminoSet3)) {
+        for (Map.Entry<PentminoSet5, List<PentminoSet4>> entry : fourMap.entrySet()) {
+            List<PentminoSet4> list = entry.getValue();
+            for (PentminoSet4 pentminoSet4 : results.keySet()) {
+                if (list.contains(pentminoSet4)) {
                     oks.add(entry.getKey());
                     continue LOOP;
                 }
@@ -96,15 +98,12 @@ public class PerfectMain {
                     for (int i4 = 0; i4 < types.length; i4++) {
                         if (i1 == i4 || i2 == i4 || i3 == i4)
                             continue;
-                        PentminoSet4 set4 = new PentminoSet4(types[i1], types[i2], types[i3], types[i4]);
-                        System.out.printf("%s,%s,%s,%s,%s%n", types[i1], types[i2], types[i3], types[i4], oks.contains(set4));
+                        PentminoSet5 set5 = new PentminoSet5(types[i1], types[i2], types[i3], types[i4]);
+                        System.out.printf("I,%s,%s,%s,%s,%s%n", types[i1], types[i2], types[i3], types[i4], oks.contains(set5));
                     }
                 }
             }
         }
-
-        PentminoSet4 k = new PentminoSet4(PentminoType.T, PentminoType.O, PentminoType.J, PentminoType.Z);
-        System.out.println(threeMap.get(k));
     }
 
     private static FieldPentmino createField() {
@@ -120,32 +119,42 @@ public class PerfectMain {
         for (int x = 8; x < 10; x++) {
             field.put(x, 0);
             field.put(x, 1);
-            field.put(x, 2);
-            field.put(x, 3);
+//            field.put(x, 2);
+//            field.put(x, 3);
         }
+        field.put(9, 2);
 
         field.put(7, 0);
         field.put(7, 1);
-        field.put(7, 2);
+//        field.put(7, 2);
         field.put(6, 1);
 
         return new FieldPentmino(field);
     }
 
-    private static List<PentminoSet3> create3Bags(PentminoType a, PentminoType b, PentminoType c, PentminoType d) {
-        List<PentminoSet3> list = new ArrayList<>();
-        list.add(new PentminoSet3(a, b, c));
-        list.add(new PentminoSet3(a, b, d));
-        list.add(new PentminoSet3(a, c, d));
-        list.add(new PentminoSet3(a, c, b));
-        list.add(new PentminoSet3(b, c, d));
-        list.add(new PentminoSet3(b, c, a));
-        list.add(new PentminoSet3(b, a, d));
-        list.add(new PentminoSet3(b, a, c));
+    private static List<PentminoSet4> create4Bags(PentminoType a, PentminoType b, PentminoType c, PentminoType d) {
+        PentminoType i = PentminoType.I;
+        List<PentminoSet4> list = new ArrayList<>();
+        list.add(new PentminoSet4(i, a, b, c));
+        list.add(new PentminoSet4(i, a, b, d));
+        list.add(new PentminoSet4(i, a, c, d));
+        list.add(new PentminoSet4(i, a, c, b));
+        list.add(new PentminoSet4(i, b, c, d));
+        list.add(new PentminoSet4(i, b, c, a));
+        list.add(new PentminoSet4(i, b, a, d));
+        list.add(new PentminoSet4(i, b, a, c));
+        list.add(new PentminoSet4(a, b, c, d));
+        list.add(new PentminoSet4(a, b, c, i));
+        list.add(new PentminoSet4(a, b, i, d));
+        list.add(new PentminoSet4(a, b, i, c));
+        list.add(new PentminoSet4(a, i, c, d));
+        list.add(new PentminoSet4(a, i, c, b));
+        list.add(new PentminoSet4(a, i, b, c));
+        list.add(new PentminoSet4(a, i, b, d));
         return list;
     }
 
-    private static Result check(FieldPentmino field, PentminoSet3 set) {
+    private static Result check(FieldPentmino field, PentminoSet4 set) {
         PentminoType first = set.get(0);
         List<MotionState> next1 = getNext(field, first);
         for (MotionState state1 : next1) {
@@ -158,8 +167,13 @@ public class PerfectMain {
                 List<MotionState> next3 = getNext(copy2, third);
                 for (MotionState state3 : next3) {
                     FieldPentmino copy3 = increaseStep(copy2, third, state3);
-                    if (copy3.maxHeight() == 0) {
-                        return Result.createOK(field, first, state1, second, state2, third, state3);
+                    PentminoType fourth = set.get(3);
+                    List<MotionState> next4 = getNext(copy3, fourth);
+                    for (MotionState state4 : next4) {
+                        FieldPentmino copy4 = increaseStep(copy3, fourth, state4);
+                        if (copy4.maxHeight() == 0) {
+                            return Result.createOK(field, first, state1, second, state2, third, state3, fourth, state4);
+                        }
                     }
                 }
             }
@@ -211,43 +225,6 @@ public class PerfectMain {
         lastAction.getLockedField().show();
     }
 
-    private static class PentminoSet3 {
-        private final List<PentminoType> types;
-
-        PentminoSet3(PentminoType first, PentminoType second, PentminoType third) {
-            this.types = Arrays.asList(first, second, third);
-        }
-
-        PentminoType get(int index) {
-            return types.get(index);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            PentminoSet3 that = (PentminoSet3) o;
-
-            return types != null ? types.equals(that.types) : that.types == null;
-
-        }
-
-        @Override
-        public int hashCode() {
-            return types != null ? types.hashCode() : 0;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s %s %s", types.get(0), types.get(1), types.get(2));
-        }
-
-        public int size() {
-            return types.size();
-        }
-    }
-
     private static class PentminoSet4 {
         private final List<PentminoType> types;
 
@@ -285,16 +262,55 @@ public class PerfectMain {
         }
     }
 
+    private static class PentminoSet5 {
+        private final List<PentminoType> types;
+
+        PentminoSet5(PentminoType first, PentminoType second, PentminoType third, PentminoType four) {
+            this.types = Arrays.asList(PentminoType.I, first, second, third, four);
+        }
+
+        PentminoType get(int index) {
+            return types.get(index);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            PentminoSet5 that = (PentminoSet5) o;
+
+            return types != null ? types.equals(that.types) : that.types == null;
+
+        }
+
+        @Override
+        public int hashCode() {
+            return types != null ? types.hashCode() : 0;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s %s %s %s %s", types.get(0), types.get(1), types.get(2), types.get(3), types.get(4));
+        }
+
+        public int size() {
+            return types.size();
+        }
+    }
+
     private static class Result {
         static final Result NONE = new Result(null);
+
         private final List<Action> actions;
 
-        static Result createOK(FieldPentmino field, PentminoType first, MotionState state1, PentminoType second, MotionState state2, PentminoType third, MotionState state3) {
+        static Result createOK(FieldPentmino field, PentminoType first, MotionState state1, PentminoType second, MotionState state2, PentminoType third, MotionState state3, PentminoType fourth, MotionState state4) {
             Action init = Action.createFirstAction(field);
             Action action1 = new Action(state1.next, first, state1.nextRotation, init);
             Action action2 = new Action(state2.next, second, state2.nextRotation, action1);
             Action action3 = new Action(state3.next, third, state3.nextRotation, action2);
-            List<Action> actions = Arrays.asList(action1, action2, action3);
+            Action action4 = new Action(state4.next, fourth, state4.nextRotation, action3);
+            List<Action> actions = Arrays.asList(action1, action2, action3, action4);
             return new Result(actions);
         }
 
