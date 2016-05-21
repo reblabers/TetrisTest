@@ -24,7 +24,6 @@ public class Next {
     private final List<MotionState> states = new ArrayList<>();
 
     private final RotateStateManager visited = new RotateStateManager(FIELD_WIDTH, FIELD_HEIGHT);
-    private final RotateStateManager saved = new RotateStateManager(FIELD_WIDTH, FIELD_HEIGHT);
 
     private final Field field;
     private final FieldPentmino fieldPentmino;
@@ -147,7 +146,7 @@ public class Next {
 //        RotateState nextRotation = state.nextRotation;
 //        boolean succeed = saved.add(current, nextRotation);
 //        if (!succeed)
-//            return;
+////            return;
 
         if (state.type == StateType.NORMAL_LOCK || state.type == StateType.ROTATE_LOCK)
             states.add(state);
@@ -171,6 +170,17 @@ public class Next {
     public List<MotionState> getStates() {
         return states;
     }
+
+//    public List<Coordinate> getPositions() {
+//        List<Coordinate> next = new ArrayList<>();
+//        for (int row = 0; row < FIELD_HEIGHT; row++) {
+//            for (int col = 0; col < FIELD_WIDTH; col++) {
+//                if (saved.contains(row, col))
+//                    next.add(new Coordinate(col, row));
+//            }
+//        }
+//        return next;
+//    }
 
     public boolean isSearched() {
         return this.isSearch;
@@ -252,8 +262,10 @@ public class Next {
         }
 
         public boolean contains(Coordinate coordinate, RotateState state) {
-            int x = coordinate.x;
-            int y = coordinate.y;
+            return contains(coordinate.x, coordinate.y, state);
+        }
+
+        public boolean contains(int x, int y, RotateState state) {
             return sets[y][x] != null && sets[y][x].contains(state);
         }
 

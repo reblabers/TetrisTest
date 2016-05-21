@@ -19,7 +19,66 @@ public class Main {
 //        exampleNext();
 
         // 7種ペントミノをランダムにおいてテト譜を作成
-        exampleActions();
+//        exampleActions();
+
+        FieldPentmino f = createField();
+        f.show();
+
+        // 移動先候補リスト
+        PentminoType type = PentminoType.L;
+        Next next = new Next(f, type);
+        next.search();
+        List<MotionState> states = next.getStates();
+
+        // 同じ移動先をフィルタ
+        HashMap<FilterKey, MotionState> map = new HashMap<>();
+        for (MotionState state : states) {
+            FilterKey filterKey = new FilterKey(state.next, state.nextRotation);
+            if (!map.containsKey(filterKey))
+                map.put(filterKey, state);
+        }
+
+        int height = f.maxHeight();
+        List<MotionState> nextList = new ArrayList<>();
+        for (MotionState state : map.values()) {
+            FieldPentmino copy = increaseStep(f, type, state);
+            if (copy.maxHeight() <= height) {
+                System.out.println(height + ">" + copy.maxHeight() + ": " + state);
+                nextList.add(state);
+            }
+        }
+    }
+
+    private static FieldPentmino increaseStep(FieldPentmino field, PentminoType type, MotionState state) {
+        FieldPentmino copy = field.copy();
+        copy.put(state.next, new Pentmino(type, state.nextRotation));
+        copy.clearLine();
+        return copy;
+    }
+
+    private static FieldPentmino createField() {
+        Field field = new Field();
+
+        for (int x = 0; x < 4; x++) {
+            field.put(x, 0);
+            field.put(x, 1);
+            field.put(x, 2);
+            field.put(x, 3);
+        }
+
+        for (int x = 8; x < 10; x++) {
+            field.put(x, 0);
+            field.put(x, 1);
+            field.put(x, 2);
+            field.put(x, 3);
+        }
+
+        field.put(7, 0);
+        field.put(7, 1);
+        field.put(7, 2);
+        field.put(6, 1);
+
+        return new FieldPentmino(field);
     }
 
     private static void example1() {
@@ -143,9 +202,8 @@ public class Main {
         List<Action> actions = new ArrayList<>();
         Random random = new Random();
 
-        // 最初の動作
+        // 最初のフィールド状態
         Action prev = Action.createFirstAction(fieldPentmino);
-        actions.add(prev);
 
         for (PentminoType type : types) {
             // 回転方向を決める
@@ -172,5 +230,35 @@ public class Main {
         }
 
         return actions;
+    }
+
+    private static class FilterKey {
+        private final Coordinate next;
+        private final RotateState nextRotation;
+
+        public FilterKey(Coordinate next, RotateState nextRotation) {
+
+            this.next = next;
+            this.nextRotation = nextRotation;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Main.FilterKey filterKey = (Main.FilterKey) o;
+
+            if (next != null ? !next.equals(filterKey.next) : filterKey.next != null) return false;
+            return nextRotation == filterKey.nextRotation;
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = next != null ? next.hashCode() : 0;
+            result = 31 * result + (nextRotation != null ? nextRotation.hashCode() : 0);
+            return result;
+        }
     }
 }

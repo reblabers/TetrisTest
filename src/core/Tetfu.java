@@ -15,7 +15,6 @@ public class Tetfu {
     public static final int TETFU_FIELD_BLOCKS = 24 * TETFU_FIELD_WIDTH;
 
     private final List<Integer> values = new ArrayList<>();
-    private Field field;
 
     public String parse(Action lastAction) {
         LinkedList<Action> actions = new LinkedList<>();
@@ -24,15 +23,13 @@ public class Tetfu {
             actions.addFirst(action);
             action = action.getPrevious();
         }
-        return parse(actions);
+        return parse(actions.subList(1, actions.size()));
     }
 
     public String parse(List<Action> actions) {
-        this.field = actions.get(0).getLockedField().getField();
         values.clear();
 
-        List<Action> subActions = actions.subList(1, actions.size());
-        invoke(subActions);
+        invoke(actions);
 
         StringBuilder builder = new StringBuilder();
         for (Integer value : values)
@@ -46,14 +43,18 @@ public class Tetfu {
 
     private void invoke(List<Action> actions) {
         int repeatCount = 0;
+        Field prevField = new Field();
         for (int index = 0; index < actions.size(); index++) {
+            Action action = actions.get(index);
+            Field currentField = action.getPrevious().getLockedField().getField();
+
             // field settings
             if (repeatCount == 0) {
                 int counter = 0;
-                boolean lastBlock = field.isEmpty(0, TETFU_FIELD_TOP);
+                boolean lastBlock = diff(prevField, currentField, 0, TETFU_FIELD_TOP);
                 for (int y = TETFU_FIELD_TOP; 0 <= y; y--) {
                     for (int x = 0; x < TETFU_FIELD_WIDTH; x++) {
-                        boolean currentBlock = field.isEmpty(x, y);
+                        boolean currentBlock = diff(prevField, currentField, x, y);
                         if (lastBlock == currentBlock) {
                             counter++;
                         } else {
@@ -80,9 +81,14 @@ public class Tetfu {
             }
 
             // action settings
-            Action action = actions.get(index);
             parseAction(action, true, false, true, false, false);
+
+            prevField = action.getLockedField().getField();
         }
+    }
+
+    private boolean diff(Field prev, Field current, int x, int y) {
+        return prev.isEmpty(x, y) == current.isEmpty(x, y);
     }
 
     private void fixField(boolean isEmpty, int num) {
@@ -147,7 +153,6 @@ public class Tetfu {
             y += 1;
         else if (type == PentminoType.Z && rotate == RotateState.LEFT)
             x -= 1;
-
 
         return (TETFU_FIELD_TOP - y) * TETFU_FIELD_WIDTH + x;
     }
